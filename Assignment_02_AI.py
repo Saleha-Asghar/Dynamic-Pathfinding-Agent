@@ -84,3 +84,56 @@ def draw(win, grid, rows, width):
 
     draw_grid_lines(win, rows, width)
     pygame.display.update() # "Flip" the drawing to the monitor
+
+
+def get_clicked_pos(pos, rows, width):
+    gap = width // rows
+    y, x = pos
+
+    row = y // gap
+    col = x // gap
+
+    return row, col
+
+def main(win, width):
+    rows = ROWS # Using the ROWS we got from input() earlier
+    grid = make_grid(rows, width)
+
+    start = None
+    goal = None
+    run = True
+
+    while run:
+        draw(win, grid, rows, width)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+
+            # LEFT CLICK
+            if pygame.mouse.get_pressed()[0]: 
+                pos = pygame.mouse.get_pos()
+                row, col = get_clicked_pos(pos, rows, width)
+                spot = grid[row][col]
+                
+                if not start and spot != goal:
+                    start = spot
+                    start.make_start()
+                elif not goal and spot != start:
+                    goal = spot
+                    goal.make_goal()
+                elif spot != goal and spot != start:
+                    spot.make_wall()
+
+            # RIGHT CLICK (Reset)
+            elif pygame.mouse.get_pressed()[2]: 
+                pos = pygame.mouse.get_pos()
+                row, col = get_clicked_pos(pos, rows, width)
+                spot = grid[row][col]
+                spot.reset()
+                if spot == start: start = None
+                if spot == goal: goal = None
+
+    pygame.quit()
+
+# Call the function to start the app
+main(WINDOW, WIDTH)
