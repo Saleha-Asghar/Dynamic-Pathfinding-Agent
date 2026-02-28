@@ -2,6 +2,7 @@ import pygame
 import math
 import random
 from queue import PriorityQueue 
+import time
 
 # --- 1. USER INPUT & CONFIGURATION ---
 try:
@@ -123,16 +124,16 @@ def generate_random_map(grid, rows):
                 if random.random() < 0.3:
                     spot.make_wall()
 
-def a_star(draw, grid, start, goal):
+
+
+def a_star(draw, grid, start, goal, dynamic_mode=False):
+    start_time = time.time()
+    nodes_visited = 0
     count = 0
     open_set = PriorityQueue()
-    # We put (f_score, tie_breaker, node) into the queue
     open_set.put((0, count, start))
-    
     start.g = 0
     start.f = h(start.get_pos(), goal.get_pos())
-    
-    # Track which nodes are currently in the queue
     open_set_hash = {start}
 
     while not open_set.empty():
@@ -140,48 +141,64 @@ def a_star(draw, grid, start, goal):
             if event.type == pygame.QUIT:
                 pygame.quit()
 
-        # Get the node with the lowest f_score
         current = open_set.get()[2]
         open_set_hash.remove(current)
+        nodes_visited += 1
 
         if current == goal:
-            # Reconstruct path by following parents
+            path_cost = 0
             temp = goal
             while temp.parent:
+                path_cost += 1
                 temp = temp.parent
                 if temp != start:
                     temp.make_path()
                 draw()
+            
+            # Assignment Requirement: Print Metrics
+            end_time = time.time()
+            print(f"--- A* Results ---")
+            print(f"Nodes Visited: {nodes_visited}")
+            print(f"Path Cost: {path_cost}")
+            print(f"Execution Time: {(end_time - start_time) * 1000:.2f} ms")
             return True
 
-        for neighbor in current.neighbors:
-            temp_g_score = current.g + 1 # Distance between neighbors is 1
+        # --- DYNAMIC OBSTACLE LOGIC ---
+        if dynamic_mode and random.random() < 0.05: # 5% chance per step
+            r_row, r_col = random.randint(0, ROWS - 1), random.randint(0, ROWS - 1)
+            random_spot = grid[r_row][r_col]
+            if not random_spot.is_start() and not random_spot.is_goal():
+                random_spot.make_wall()
+                for row in grid:
+                    for spot in row:
+                        spot.update_neighbors(grid)
 
+        for neighbor in current.neighbors:
+            temp_g_score = current.g + 1
             if temp_g_score < neighbor.g:
                 neighbor.parent = current
                 neighbor.g = temp_g_score
                 neighbor.f = temp_g_score + h(neighbor.get_pos(), goal.get_pos())
-                
                 if neighbor not in open_set_hash:
                     count += 1
                     open_set.put((neighbor.f, count, neighbor))
                     open_set_hash.add(neighbor)
                     neighbor.make_frontier()
 
-        draw() # Update the visuals
+        draw()
         if current != start:
             current.make_visited()
 
     return False
 
-
-def gbfs_algorithm(draw, grid, start, goal):
+def gbfs_algorithm(draw, grid, start, goal, dynamic_mode=False):
+    start_time = time.time()
+    nodes_visited = 0
     count = 0
     open_set = PriorityQueue()
     open_set.put((0, count, start))
-    start.f = h(start.get_pos(), goal.get_pos())
     open_set_hash = {start}
-    visited = {start} # Use a set to track visited nodes for GBFS
+    visited = {start}
 
     while not open_set.empty():
         for event in pygame.event.get():
@@ -190,15 +207,34 @@ def gbfs_algorithm(draw, grid, start, goal):
 
         current = open_set.get()[2]
         open_set_hash.remove(current)
+        nodes_visited += 1
 
         if current == goal:
+            path_cost = 0
             temp = goal
             while temp.parent:
+                path_cost += 1
                 temp = temp.parent
                 if temp != start:
                     temp.make_path()
                 draw()
+            
+            end_time = time.time()
+            print(f"--- GBFS Results ---")
+            print(f"Nodes Visited: {nodes_visited}")
+            print(f"Path Cost: {path_cost}")
+            print(f"Execution Time: {(end_time - start_time) * 1000:.2f} ms")
             return True
+
+        # --- DYNAMIC LOGIC (Now fixed with correct parameter) ---
+        if dynamic_mode and random.random() < 0.05:
+            r_row, r_col = random.randint(0, ROWS - 1), random.randint(0, ROWS - 1)
+            random_spot = grid[r_row][r_col]
+            if not random_spot.is_start() and not random_spot.is_goal():
+                random_spot.make_wall()
+                for row in grid:
+                    for spot in row:
+                        spot.update_neighbors(grid)
 
         for neighbor in current.neighbors:
             if neighbor not in visited:
@@ -223,6 +259,7 @@ def main(win, width):
     start = None
     goal = None
     run = True
+    dynamic_enabled = False
 
     while run:
         draw(win, grid, ROWS, width)
@@ -260,11 +297,15 @@ def main(win, width):
 
                 # 2. Trigger A*
                 if event.key == pygame.K_SPACE and start and goal:
-                    a_star(lambda: draw(win, grid, ROWS, width), grid, start, goal)
+                    a_star(lambda: draw(win, grid, ROWS, width), grid, start, goal, dynamic_enabled)
+
+                if event.key == pygame.K_d:
+                    dynamic_enabled = not dynamic_enabled
+                    print(f"Dynamic Mode: {dynamic_enabled}")
 
                 # 3. Trigger GBFS
                 if event.key == pygame.K_g and start and goal:
-                    gbfs_algorithm(lambda: draw(win, grid, ROWS, width), grid, start, goal)
+                    gbfs_algorithm(lambda: draw(win, grid, ROWS, width), grid, start, goal, dynamic_enabled)
 
                 # 4. Map and Clear
                 if event.key == pygame.K_r: 
