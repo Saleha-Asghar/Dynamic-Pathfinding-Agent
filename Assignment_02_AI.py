@@ -39,3 +39,16 @@ class Spot:
 
     def draw(self, win):
         pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.width))
+
+
+
+def h(p1, p2, type="manhattan"):
+    x1, y1 = p1
+    x2, y2 = p2
+    
+    if type == "manhattan":
+        # L1 Norm: Absolute horizontal + Absolute vertical distance
+        return abs(x1 - x2) + abs(y1 - y2)
+    else:
+        # L2 Norm: Straight line distance (Pythagorean theorem)
+        return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
