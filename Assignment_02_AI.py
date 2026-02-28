@@ -1,4 +1,5 @@
 import pygame
+import math
 
 
 WHITE = (255, 255, 255)   # Empty
@@ -52,3 +53,34 @@ def h(p1, p2, type="manhattan"):
     else:
         # L2 Norm: Straight line distance (Pythagorean theorem)
         return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+
+
+def make_grid(rows, width):
+    grid = []
+    gap = width // rows # Size of each square
+    for i in range(rows):
+        grid.append([])
+        for j in range(rows):
+            # Create a Spot object for every coordinate
+            spot = Spot(i, j, gap, rows)
+            grid[i].append(spot)
+    return grid
+
+def draw_grid_lines(win, rows, width):
+    gap = width // rows
+    for i in range(rows):
+        # Draw horizontal lines
+        pygame.draw.line(win, GREY, (0, i * gap), (width, i * gap))
+        for j in range(rows):
+            # Draw vertical lines
+            pygame.draw.line(win, GREY, (j * gap, 0), (j * gap, width))
+
+def draw(win, grid, rows, width):
+    win.fill(WHITE) # Clear the screen every frame
+
+    for row in grid:
+        for spot in row:
+            spot.draw(win) # Tell each spot to draw itself
+
+    draw_grid_lines(win, rows, width)
+    pygame.display.update() # "Flip" the drawing to the monitor
